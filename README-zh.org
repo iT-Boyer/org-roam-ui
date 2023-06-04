@@ -1,0 +1,515 @@
+[[https://github.com/org-roam/org-roam-ui/actions/workflows/ci.yml][[[https://github.com/org-roam/org-roam-ui/actions/workflows/ci.yml/badge.svg]]]]
+[[https://melpa.org/#/org-roam-ui][[[https://melpa.org/packages/org-roam-ui-badge.svg]]]]
+
+* org-roam-ui: 为您的组织漫游zettelkasten的图形前端
+:PROPERTIES:
+:CUSTOM_ID: org-roam-ui-a-graphical-frontend-for-your-org-roam-zettelkasten
+:END:
+*Table of Contents*
+
+- [[#changelog][Changelog]]
+- [[#installation][Installation]]
+  - [[#package.el][Using package.el]]
+  - [[#doom][Doom]]
+  - [[#straightuse-package][straight/use-package]]
+- [[#usage][Usage]]
+- [[#disclaimers-][Disclaimers ‼]]
+- [[#faq-][FAQ 🗨]]
+- [[#features-][Features ✨]]
+  - [[#planned-features][Planned features]]
+- [[#supporting-org-roam-ui][Supporting org-roam-ui]]
+  - [[#feedback][Feedback]]
+  - [[#contribute-][Contribute 💪]]
+    - [[#hacktoberfest][Hacktoberfest]]
+  - [[#donate][Donate]]
+    - [[#sponsors][Sponsors]]
+
+Org-Roam-UI 是一个用于浏览和交互 with your [[https://github.com/org-roam/org-roam][org-roam]] 笔记的前端。
+
+Org-Roam-UI 的目的是 [[https://github.com/org-roam/org-roam-server][org-roam-server]] 的继任者,它通过一个与 Emacs 并行运行的 Web 应用程序扩展了 org-roam 的功能。
+
+Org-Roam-UI 提供:
+
+- 网络图可视化:将您的 org-roam 网络图可视化为交互式网络图。
+- 全文搜索:在您的所有 org-roam 笔记中进行全文搜索。
+- 标签/主题可视化:以网络图的形式可视化 org-roam 标签和主题。
+- 经过身份验证的API:允许您构建自定义可视化和工具来增强您的 org-roam 工作流。
+- 移动友好:Org-Roam-UI 采用响应式 Web 设计,可在移动设备上正常工作。
+
+** Changelog
+:PROPERTIES:
+:CUSTOM_ID: changelog
+:END:
+For major new features/bugfixes we will update
+[[https://github.com/org-roam/org-roam-ui/discussions/30][changelog]].
+
+** Installation
+:PROPERTIES:
+:CUSTOM_ID: installation
+:END:
+=org-roam-ui= is on MELPA!
+
+org-roam-ui requires =org-roam=, =websocket=, =simple-httpd=, =f= and
+Emacs >= 27 for fast JSON parsing.
+
+*** package.el
+:PROPERTIES:
+:CUSTOM_ID: package.el
+:END:
+#+begin_example
+M-x package-install org-roam-ui
+#+end_example
+
+No configuration is necessary when you use =package.el= to install ORUI.
+
+*** Doom
+:PROPERTIES:
+:CUSTOM_ID: doom
+:END:
+Add the following to your =package.el=
+
+Org-roam-ui tries to keep up with the latest features of =org-roam=,
+which conflicts with Doom Emacs's desire for stability. To make sure
+nothing breaks, use the latest version of =org-roam= by unpinning it.
+
+#+begin_src emacs-lisp
+(unpin! org-roam)
+(package! org-roam-ui)
+#+end_src
+
+Then something along the following to your =config.el=
+
+#+begin_src emacs-lisp
+(use-package! websocket
+    :after org-roam)
+
+(use-package! org-roam-ui
+    :after org-roam ;; or :after org
+;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+;;         a hookable mode anymore, you're advised to pick something yourself
+;;         if you don't care about startup time, use
+;;  :hook (after-init . org-roam-ui-mode)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+#+end_src
+
+We recommend only loading org-roam-ui after loading org(-roam) as
+starting the server and making database requests can impact startup
+times quite a lot.
+
+*** straight/use-package
+:PROPERTIES:
+:CUSTOM_ID: straightuse-package
+:END:
+#+begin_src emacs-lisp
+(use-package org-roam-ui
+  :straight
+    (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+    :after org-roam
+;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+;;         a hookable mode anymore, you're advised to pick something yourself
+;;         if you don't care about startup time, use
+;;  :hook (after-init . org-roam-ui-mode)
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t))
+#+end_src
+
+** Usage
+:PROPERTIES:
+:CUSTOM_ID: usage
+:END:
+使用 =M-x org-roam-ui-mode RET= 启用全局模式。它将在 http://127.0.0.1:35901/ 上启动 Web 服务器,并通过 WebSocket 连接实时更新。
+*** 命令
+:PROPERTIES:
+:CUSTOM_ID: commands
+:END:
+ORUI 提供了几个命令来与图表进行交互,而无需离开 Emacs。注意:目前这是相当粗糙的,未来会有改变。考虑这更像是一个预告片。
+
+**** 移动
+:PROPERTIES:
+:CUSTOM_ID: moving-around
+:END:
+#+begin_src emacs-lisp
+(org-roam-ui-node-zoom)
+#+end_src
+
+在全局视图中放大当前节点 /忽略本地模式/。
+
+#+begin_src emacs-lisp
+(org-roam-ui-node-local)
+#+end_src
+
+在本地视图中打开当前节点。
+
+您可以选择性地将这些命令的参数给出三个:
+
+1. 您要缩放到的节点ID(默认为当前节点)
+2. 您要缩放的速度(可以在UI中设置),以毫秒为单位。
+3. 缩放的填充,以像素为单位。
+
+这些选项目前可能不起作用,请暂时在UI中配置它们。
+
+**** 操纵图表
+:PROPERTIES:
+:CUSTOM_ID: manipulating-graph
+:END:
+
+#+begin_src emacs-lisp
+(org-roam-ui-add-to-local-graph &optional id)
+#+end_src
+
+将具有给定 id 的节点添加到本地图中。如果未给出 id,则使用当前节点。如果本地图未打开,则将打开本地图。
+
+#+begin_src emacs-lisp
+(org-roam-ui-remove-from-local-graph &optional id)
+#+end_src
+
+从本地图中删除具有给定 id 的节点。如果未给出 id,则使用当前节点。
+*** 配置
+:PROPERTIES:
+:CUSTOM_ID: configuration
+:END:
+Org-Roam-UI 公开了一些变量,但大部分定制是在 Web 应用程序中完成的。
+
+**** 跟随
+:PROPERTIES:
+:CUSTOM_ID: following
+:END:
+默认情况下,ORUI 会在 Emacs 中跟随您。要禁用此功能,请设置
+
+#+begin_src emacs-lisp
+(setq org-roam-ui-follow nil)
+#+end_src
+
+或者禁用次要模式 =org-roam-ui-follow-mode= 。
+
+**** 更新
+:PROPERTIES:
+:CUSTOM_ID: updating
+:END:
+我们计划使图表的更新平滑进行,目前只有在发生更新时才可能重新加载整个图表(但本地模式得以保留)。这是默认启用的,要禁用
+
+#+begin_src emacs-lisp
+(setq org-roam-ui-update-on-save nil)
+#+end_src
+
+**** 主题
+:PROPERTIES:
+:CUSTOM_ID: theme
+:END:
+Org-Roam-UI 可以同步您的 Emacs 主题!这是默认行为,要禁用它,请执行
+
+#+begin_src emacs-lisp
+(setq org-roam-ui-sync-theme nil)
+#+end_src
+
+然后调用 =M-x orui-sync-theme= 。
+
+如果您不喜欢同步也不喜欢默认主题,也可以提供自己的主题。要这样做,将 =org-roam-ui-custom-theme= 设置为(相当具体的)变量的关联列表,如下所示
+
+#+begin_src emacs-lisp
+(setq org-roam-ui-custom-theme
+     '((bg . "#1E2029")
+         (bg-alt . "#282a36")
+         (fg . "#f8f8f2")
+         (fg-alt . "#6272a4")
+         (red . "#ff5555")
+         (orange . "#f1fa8c")
+         (yellow ."#ffb86c")
+         (green . "#50fa7b")
+         (cyan . "#8be9fd")
+         (blue . "#ff79c6")
+         (violet . "#8be9fd")
+         (magenta . "#bd93f9")))
+#+end_src
+
+您可以在最后一个参数之后可选地提供 =(base1 . "#XXXXXX")= 参数,以设置背景阴影,否则 ORUI 将根据提供的 bg 和 fg 推测。
+
+*** Open on start
+:PROPERTIES:
+:CUSTOM_ID: open-on-start
+:END:
+ 默认情况下,org-roam-ui 将尝试在默认浏览器中打开自己。要禁用此功能,请设置:
+#+begin_src emacs-lisp
+(setq org-roam-ui-open-on-start nil)
+#+end_src
+
+** 免责声明 ‼
+:PROPERTIES:
+:CUSTOM_ID: disclaimers
+:END:
+- 我们只支持[[https://blog.jethro.dev/posts/org_roam_v2/][org-roam v2]]; v1将永远不会支持。
+- 如名称所示,Org-Roam-UI 仅适用于 org-roam!如果您以其他形式组织笔记, org-roam-ui 无法工作,因为它使用 org-roam 获取所有连接。
+- 与 org-roam-server 的功能等价性不是目标。虽然我们的目标是制作一个类似的产品,它有一个视觉图表可以帮助您探索和导航 org-roam 节点,但我们并不打算复制所有的功能,也不限于复制 org-roam-server 的功能。
+- 这是 alpha 软件:请尽量使用它,但预期会有 bug 和故障排除!
+- 该项目由几个业余爱好者创建,以满足自己的需求。我们在任何物质方面都不会得到奖励,开发可能会在任何时候停止(因为生活)。保持项目活力的最佳方式是[[#Contribute][浏览代码并贡献]]!
+
+** 常见问题 🗨
+:PROPERTIES:
+:CUSTOM_ID: faq
+:END:
+
+*** 问题:噢,它出故障了:现在怎么办?
+:PROPERTIES:
+:CUSTOM_ID: q-aaaaand-it-broke-what-do
+:END:
+对不起!这仍然是alpha软件,所以偶尔会中断。您可以尝试的最佳方法是通过Firefox的“存储 > 本地存储”或Chromium的“应用程序>本地存储”删除您的设置。
+
+如果问题仍然存在,请提交错误报告,其中包括:
+
+1. 浏览器控制台日志
+2. 您的浏览器
+3. 出现故障时您正在做什么
+
+我们会尽快为您解决!
+
+*** 问题:点击 'Open in Emacs' 会出现与 json-parse-string 相关的错误,我该如何修复?
+:PROPERTIES:
+:CUSTOM_ID: q-clicking-open-in-emacs-gives-an-error-around-json-parse-string-how-do-i-fix-this
+:END:
+如果您在 Emacs 中收到错误信息 =function definition is void json-parse-string=,则必须将 Emacs 与 json 支持编译。这在诸如 Gentoo 之类的系统上不是自动完成的。
+
+***  问题:图表太慢了!更快吗?
+:PROPERTIES:
+:CUSTOM_ID: q-graph-slow-faster
+:END:
+虽然我们尽量优化图表的显示,但我们能做的只有这么多。对于较大的网络(>2k个节点),频繁拖动图表可能会造成一些性能问题,但有几件事可以提高速度。
+
+**** 关闭“调整面板”
+:PROPERTIES:
+:CUSTOM_ID: close-the-tweaks-panel
+:END:
+在撰写本文时(8月8日),它的优化程度还很低,在打开调整面板的情况下,在全局模式和本地模式或2D模式和3D模式之间切换的速度明显比关闭面板时慢。这将在未来的版本中修复。
+
+**** 使用基于 Chromium 的浏览器
+:PROPERTIES:
+:CUSTOM_ID: use-a-chromium-based-browser
+:END:
+尽管我们不得不说,Firefox 的渲染引擎比其 Chromium 表亲慢得多。首先比较两者的性能,看是否这是主要问题。
+
+**** 关闭粒子
+:PROPERTIES:
+:CUSTOM_ID: turn-off-the-particles
+:END:
+我知道,看到那些小家伙上上下下穿梭在您的笔记中很酷,但速度非常慢,特别是在3D模式下。
+
+**** 关闭标签
+:PROPERTIES:
+:CUSTOM_ID: turn-off-labels
+:END:
+可能是渲染第二慢的东西,几乎不可能加速。考虑只在突出显示或增加“标签外观比例”时才打开标签。
+
+**** 关闭高亮动画
+:PROPERTIES:
+:CUSTOM_ID: turn-off-highlight-animations
+:END:
+我知道,它们很华丽,但性能不佳。
+
+**** 关闭碰撞 collision
+:PROPERTIES:
+:CUSTOM_ID: turn-off-collision
+:END:
+很好,但代价高昂!如果您喜欢图表更加分散,关闭碰撞对最终布局的影响很小,但会大大提高性能。
+
+**** 关闭重力 gravity
+:PROPERTIES:
+:CUSTOM_ID: turn-off-gravity
+:END:
+更少的作用力,更少的担忧。
+
+**** 优先选择2D而不是3D
+:PROPERTIES:
+:CUSTOM_ID
+I know, it looks cool, but man is it slow.
+
+**** 别拖那该死的东西到处跑了!
+:PROPERTIES:
+:CUSTOM_ID: dont-drag-the-dang-thing-around-so-much
+:END:
+根据我们的经验,一旦图实际定型并且不需要再次渲染任何内容,四处看看应该不会造成太大麻烦。目前还没有“保存”图表配置的方法,但我们正在探索这种可能性。然而,图表布局算法是确定性的,因此除非数据发生变化,否则每次应该产生相同的结果。
+
+*** Q:您会实现X吗?
+:PROPERTIES:
+:CUSTOM_ID: q-will-you-implement-x
+:END:
+希望如此!但是时间有限,我们可以在这件事情崩溃在自己身上之前塞入的功能数量也是有限的,所以我们正在逐步添加功能以确保它们能够工作。也就是说,我们很乐意听取您的意见!如果您的功能尚未在  [[https://github.com/org-roam/org-roam-ui/projects/2][项目板]] 上,请在 [[https://github.com/org-roam/>oam-ui/discussions/6][小功能请求讨论]] 中发布小功能请求,比如“我想给这个特定节点上色”,并在 [[https://github.com/org-roam/org-roam-ui/discussions/66][主要功能请求讨论]] 中发布/主要/功能请求(例如“我想发布我的图表”)或投票支持已经发布的功能请求,这样我们可以在某种程度上调整我们的优先级!
+
+*** Q: 这不适用于 org-roam v1/org-brain/Zettledelft!
+:PROPERTIES:
+:CUSTOM_ID: q-this-doesnt-work-with-org-roam-v1org-brainzettledelft
+:END:
+是的!我们只支持 org-roam v2,尽管我们后来可能会引入与后端无关的实现。
+
+
+** Features ✨
+:PROPERTIES:
+:CUSTOM_ID: features
+:END:
+Org-Roam-UI的主要功能是能够生成 org-roam 笔记的图表可视化。
+
+Org-Roam-UI 读取您的 org-roam 数据库并构建一个交互式图表,显示您的所有笔记及其之间的链接。这提供了一种全新的方式来探索和理解您的笔记及其相互关联。
+
+主要功能包括:
+
+- 网络图可视化:Org-Roam-UI以交互式网络图的形式显示您的org-roam网络图。您可以放大、缩小、平移和旋转图表。
+
+- 跟随您的移动:当您在Emacs中打开一个笔记时,Org-Roam-UI会将图表的焦点移到相应的节点上,使其跟随您的移动。
+
+- 打开笔记:您可以单击网络图中的节点来直接在Emacs中打开相应的笔记。
+
+- 过滤器:您可以应用过滤器来显示或隐藏网络图中的特定节点。这有助于减少混乱并专注在感兴趣的部分。
+
+- 3D视图:您可以启用3D视图以直观地探索您的网络图。这提供了一种全新的维度来研究您的思想!
+
+- 主题同步:Org-Roam-UI可以自动使用您在Emacs中使用的相同主题,以保持一致的外观和感觉。
+
+- 移动设备友好:Org-Roam-UI采用响应式Web设计,因此即使在移动设备上也能正常工作。
+
+*** 酷炫的图表
+:PROPERTIES:
+:CUSTOM_ID: cool-graph
+:END:
+#+caption: 图片
+[[https://user-images.githubusercontent.com/21983833/127747037-aac46e8a-8617-4436-8887-ea1ad7a3141a.png]]
+**** 在Emacs中打开笔记
+:PROPERTIES:
+:CUSTOM_ID: open-notes-in-emacs
+:END:
+双击节点将在 Emacs 中打开对应的笔记,非常酷。您不需要 org-protocol 实现此功能,它开箱即用!
+
+https://user-images.githubusercontent.com/21983833/127747170-3b49fbde-7fc5-410f-bd26-4ffea8dae48c.mp4
+
+**** 笔记预览
+:PROPERTIES:
+:CUSTOM_ID: note-previewing
+:END:
+当您在软弱的时候离开 Emacs 时。
+
+https://user-images.githubusercontent.com/21983833/136845036-a6bd4b32-d78c-4bcf-aa8a-0e37c69cbbe8.mp4
+
+**** 跟随您在 Emacs 中的移动!
+:PROPERTIES:
+:CUSTOM_ID: follow-your-movement-in-emacs
+:END:
+当您在 Emacs 中打开一个笔记时,org-roam-ui 会移至图表上的相应节点。
+
+<https://user-images.githubusercontent.com/21983833/127747187-7823a825-a2f8-449c-a0ec-1c5c525621dc.mp4>
+
+**** 主题同步
+:PROPERTIES:
+:CUSTOM_ID: theme-syncing
+:END:
+您的 gruvbox 距离 =M-x orui-sync-theme= 只有一步之遥(或者您可以直接在设置中选择它们)。
+
+https://user-images.githubusercontent.com/21983833/127747187-7823a825-a2f8-449c-a0ec-1c5c525621dc.mp4
+
+**** 筛选器  
+:PROPERTIES:
+:CUSTOM_ID: filters
+:END:
+过滤掉所有那些“临时”的笔记，你将筛选某一天。
+https://user-images.githubusercontent.com/21983833/136944460-76b92e7c-7cf5-40d0-89f4-bdabfa41fe01.mp4
+
+**** 3D
+:PROPERTIES:
+:CUSTOM_ID: d
+:END:
+字面上深化您对自己思想的理解(而且看起来很酷)
+从字面上加深你对自己想法的理解(这看起来很酷):
+
+https://user-images.githubusercontent.com/21983833/127747234-d0588cdf-623f-4d13-a060-737bc570b295.mp4
+** 计划中的功能
+:PROPERTIES:
+:CUSTOM_ID: planned-features
+:END:
+*** 图表
+:PROPERTIES:
+:CUSTOM_ID: graph
+:END:
+无特定顺序
+
+- +引用链接+自定义+
+- +标签过滤/着色+
+- ~本地图显示N个邻居~
+- ~着色选项(按邻居,中心性等)~
+- 设置配置文件
+
+*** 一般UI
+:PROPERTIES:
+:CUSTOM_ID: ui-in-general
+:END:
+- +使用AST解析查看文件+
+- Andy Matushak风格显示笔记
+- 发现选项,例如"显示X和Y之间的最短路径"
+
+* 与其他 Org-mode 包的集成
+:PROPERTIES:
+:CUSTOM_ID: integrations-with-other-org-mode-packages
+:END:
+** [[https://github.com/nobiot/md-roam][md-roam]]
+:PROPERTIES:
+:CUSTOM_ID: md-roam
+:END:
+使用 Markdown 笔记与 Org 模式笔记互换使用!
+
+** 探索
+:PROPERTIES:
+:CUSTOM_ID: delve
+:END:
+待定
+
+* 支持org-roam-ui
+:PROPERTIES:
+:CUSTOM_ID: supporting-org-roam-ui
+:END:
+** 聊天
+:PROPERTIES:
+:CUSTOM_ID: chat
+:END:
+我们有一个小的电报群来讨论 org-roam-ui,如果您很酷,可以加入。 https://t.me/+sEuL2qi37yw1NzQy
+
+** 反馈  
+:PROPERTIES:  
+:CUSTOM_ID: feedback
+:END:
+对于功能建议,请提出问题或查看主要功能和次要功能的讨论。对于其他反馈,请转到反馈讨论,或开启一个新的讨论!
+
+** 贡献 💪
+:PROPERTIES:
+:CUSTOM_ID: contribute
+:END:
+支持 org-roam-ui 持续发展的最佳方式是自己参与进来!要开始,简单地
+
+#+begin_src sh
+git clone https://github.com/org-roam/org-roam-ui
+yarn
+yarn dev
+#+end_src
+
+一个开发服务器将在 =localhost:3000= 上启动。
+
+[[https://docs.github.com/en/github/site-policy/github-community-guidelines][GitHub社区准则]]适用。
+
+如果您有兴趣更密切地参与该项目,请转到这里与核心团队的成员进行入职通话。
+
+** 捐赠 Donate
+:PROPERTIES:
+:CUSTOM_ID: donate
+:END:
+如果您真的真的喜欢 org-roam-ui,您可以进行一次性捐赠或每月赞助我们中的一个人!
+[[https://github.com/sponsors/ThomasFKJorna/][one-time donation or sponsor one of us monthly!]]
+
+*** 赞助商
+:PROPERTIES:
+:CUSTOM_ID: sponsors
+:END:
+
+#+begin_html
+  <!-- sponsors -->
+#+end_html
