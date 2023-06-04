@@ -1,6 +1,3 @@
-[[https://github.com/org-roam/org-roam-ui/actions/workflows/ci.yml][[[https://github.com/org-roam/org-roam-ui/actions/workflows/ci.yml/badge.svg]]]]
-[[https://melpa.org/#/org-roam-ui][[[https://melpa.org/packages/org-roam-ui-badge.svg]]]]
-
 * org-roam-ui: 为您的组织漫游zettelkasten的图形前端
 :PROPERTIES:
 :CUSTOM_ID: org-roam-ui-a-graphical-frontend-for-your-org-roam-zettelkasten
